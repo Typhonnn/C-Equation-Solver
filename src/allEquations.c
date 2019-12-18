@@ -1,3 +1,5 @@
+#include "equation.c"
+
 typedef struct
 {
   int count; //Number of equations
