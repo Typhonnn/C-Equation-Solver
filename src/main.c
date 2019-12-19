@@ -6,11 +6,10 @@
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
 
-struct Equation* setEquation(int eqNum, char **eqs, int numOfEq) {
-	struct Equation *tempEq = (struct Equation*)malloc(sizeof(Equation));
+void setEquation(int eqNum, char *eqStr, int numOfEq, Equation *tempEq) {
 	char eqCpy[EQ_SIZE];
 	char *delimiters = " *+=";
-	strcpy(eqCpy, eqs[eqNum]);
+	strcpy(eqCpy, eqStr);
 	float coe[MAX_EQUATIONS];
 	float num;
 	int i = 0;
@@ -22,30 +21,25 @@ struct Equation* setEquation(int eqNum, char **eqs, int numOfEq) {
 		if (splitEq != NULL) {
 			sscanf(splitEq, "%c", &var[i]);
 			coe[var[i] - 'x'] = num;
+			splitEq = strtok(NULL, delimiters);
 		}
 	}
 	tempEq->count = numOfEq;
 	tempEq->A = coe;
 	tempEq->B = num;
-	return tempEq;
 }
 
-void getEquations(int numOfEq, char **eqs) {
-	int i;
-	for (i = 0; i < numOfEq; ++i) {
-		printf("Enter equation %d: ", i + 1);
-		scanf("%s", eqs[i]);
-	}
+void getEquation(int eqNum, char *eqStr) {
+	printf("Enter equation %d: ", eqNum);
+	scanf("%s", eqStr);
 }
 
 int main() {
 	int numOfEq;
-	char eqs[MAX_EQUATIONS][EQ_SIZE];
-	struct Equation *eq1, *eq2, *eq3;
+	char eqStr1[EQ_SIZE], eqStr2[EQ_SIZE], eqStr3[EQ_SIZE];
+	Equation *eq1 = NULL, *eq2 = NULL, *eq3 = NULL;
 	printf("Number of equations: ");
 	scanf("%d", &numOfEq);
-	getEquations(numOfEq, (char**) eqs);
-	eq1 = setEquation(1, (char**) eqs, numOfEq);
-	eq2 = setEquation(2, (char**) eqs, numOfEq);
-	eq3 = setEquation(3, (char**) eqs, numOfEq);
+	getEquation(1, eqStr1);
+	setEquation(1, eqStr1, numOfEq, eq1);
 }
