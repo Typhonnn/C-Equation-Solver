@@ -1,19 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "allEquations.c"
 #include "equation.c"
 
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
 
-void setEquation(int eqNum, char *eqStr, int numOfEq, Equation *tempEq) {
+void* setEquation(AllEquations *allEq, char *eqStr) {
 	char eqCpy[EQ_SIZE];
 	char *delimiters = " *+=";
-	strcpy(eqCpy, eqStr);
-	float coe[MAX_EQUATIONS];
+	float *coe = (float*) malloc((allEq->count) * sizeof(float));
+	Equation *tempEq = malloc(sizeof(Equation));
+	if (coe == NULL || tempEq == NULL) {
+		printf("FAILED TO MALLOC EQUATION!\n");
+		return NULL;
+	}
 	float num;
 	int i = 0;
 	char var[MAX_EQUATIONS];
+	strcpy(eqCpy, eqStr);
 	char *splitEq = strtok(eqCpy, delimiters);
 	while (splitEq != NULL) {
 		sscanf(splitEq, "%f", &num);
@@ -24,22 +30,31 @@ void setEquation(int eqNum, char *eqStr, int numOfEq, Equation *tempEq) {
 			splitEq = strtok(NULL, delimiters);
 		}
 	}
-	tempEq->count = numOfEq;
+	tempEq->count = allEq->count;
 	tempEq->A = coe;
 	tempEq->B = num;
+	return tempEq;
 }
 
-void getEquation(int eqNum, char *eqStr) {
-	printf("Enter equation %d: ", eqNum);
-	scanf("%s", eqStr);
+void setAllEquations(AllEquations *allEq) {
+	int i = 0;
+	char eqStr[EQ_SIZE];
+	for (i = 0; i < (allEq->count); ++i) {
+		printf("Enter equation %d: ", i + 1);
+		scanf("%s", eqStr);
+		*((allEq->eqArr) + i) = setEquation(allEq, eqStr);
+		if (((allEq->eqArr) + i) == NULL) {
+			return;
+		}
+		memset(eqStr, 0, EQ_SIZE);
+	}
+
 }
 
 int main() {
-	int numOfEq;
-	char eqStr1[EQ_SIZE], eqStr2[EQ_SIZE], eqStr3[EQ_SIZE];
-	Equation *eq1 = NULL, *eq2 = NULL, *eq3 = NULL;
+	AllEquations *allEq;
 	printf("Number of equations: ");
-	scanf("%d", &numOfEq);
-	getEquation(1, eqStr1);
-	setEquation(1, eqStr1, numOfEq, eq1);
+	scanf("%d", &(allEq->count));
+	(allEq->eqArr) = malloc((allEq->count) * sizeof(Equation*));
+	setAllEquations(allEq);
 }
