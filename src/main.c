@@ -7,12 +7,22 @@
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
 
-void printAllEquations(AllEquations *allEq) {
+void printVector(float *vec, int size) {
+	int i;
+	printf("Vector B = \n");
+	for (i = 0; i < size; ++i) {
+		printf("\t%.3f\n", vec[i]);
+	}
+}
+
+void printMatrix(float **matrix, int size) {
 	int i, j;
-	for (i = 0; i < allEq->count; i++) {
-		for (j = 0; j < allEq->count; j++) {
-			printf("%.3f ", allEq->eqArr[i]->A[j]);
+	printf("Matrix A = \n");
+	for (i = 0; i < size; i++) {
+		for (j = 0; j < size; j++) {
+			printf("\t%.3f ", matrix[i][j]);
 		}
+		printf("\n");
 	}
 }
 
@@ -83,9 +93,40 @@ void setSolver(Solver *solver, AllEquations *allEq) {
 	setSolverMatrix(solver, allEq);
 }
 
-void calDetrmin(Solver *solver) {
+float calDetrmin(float **A_Mat, int size) {
+	float x, y, z;
+	if (size == 1) {
+		return A_Mat[0][0];
+	}
+	if (size == 2) {
+		return A_Mat[0][0] * A_Mat[1][1] - A_Mat[0][1] * A_Mat[1][0];
+	}
+	if (size == 3) {
+		x = A_Mat[1][1] * A_Mat[2][2] - A_Mat[2][1] * A_Mat[1][2];
+		y = A_Mat[1][0] * A_Mat[2][2] - A_Mat[2][0] * A_Mat[1][2];
+		z = A_Mat[1][0] * A_Mat[2][1] - A_Mat[2][0] * A_Mat[1][1];
+		return A_Mat[0][0] * x - A_Mat[0][1] * y + A_Mat[0][2] * z;
+	}
+	return 0;
+}
 
+float* calVecSol(Solver *solver) {
+	float x, y, z;
+	float *X_Vec = malloc(solver->count * sizeof(float));
+	if (X_Vec == NULL) {
+		printf("ERROR! COULD NOT MALLOC X_Vec!");
+		return 0;
+	}
+	if (solver->count == 1) {
+		*X_Vec = *solver->B_Vec / solver->Detrmin;
+	}
+	if (solver->count == 2) {
 
+	}
+	if (solver->count == 3) {
+
+	}
+	return X_Vec;
 }
 
 int main() {
@@ -108,6 +149,16 @@ int main() {
 		return 0;
 	}
 	setSolver(solver, allEq);
-	calDetrmin(solver);
+	printMatrix(solver->A_Mat, solver->count);
+	solver->Detrmin = calDetrmin(solver->A_Mat, solver->count);
+	if (solver->Detrmin == 0) {
+		printf("Matrix A determinant = %.3f\n", solver->Detrmin);
+	}
+	printVector(solver->B_Vec, solver->count);
+	if (solver->Detrmin == 0) {
+		printf("There is no single solution for that system of equations.\n");
+	} else {
+		solver->X_Vec = calVecSol(solver);
+	}
 	return 0;
 }
