@@ -7,20 +7,28 @@
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
 
+void printSolVec(float *vec, int size) {
+	int i;
+	printf("\nVector X = \n");
+	for (i = 0; i < size; ++i) {
+		printf("\t%c = %.3f\n", 'x' + i, vec[i]);
+	}
+}
+
 void printVector(float *vec, int size) {
 	int i;
-	printf("Vector B = \n");
+	printf("\nVector B = \n");
 	for (i = 0; i < size; ++i) {
 		printf("\t%.3f\n", vec[i]);
 	}
 }
 
-void printMatrix(float **matrix, int size) {
+void printMatrix(float **mat, int size) {
 	int i, j;
-	printf("Matrix A = \n");
+	printf("\nMatrix A = \n");
 	for (i = 0; i < size; i++) {
 		for (j = 0; j < size; j++) {
-			printf("\t%.3f ", matrix[i][j]);
+			printf("\t%.3f ", mat[i][j]);
 		}
 		printf("\n");
 	}
@@ -93,39 +101,76 @@ void setSolver(Solver *solver, AllEquations *allEq) {
 	setSolverMatrix(solver, allEq);
 }
 
-float calDetrmin(float **A_Mat, int size) {
+float calDetrmin(float **Mat, int size) {
 	float x, y, z;
 	if (size == 1) {
-		return A_Mat[0][0];
+		return Mat[0][0];
 	}
 	if (size == 2) {
-		return A_Mat[0][0] * A_Mat[1][1] - A_Mat[0][1] * A_Mat[1][0];
+		return Mat[0][0] * Mat[1][1] - Mat[0][1] * Mat[1][0];
 	}
 	if (size == 3) {
-		x = A_Mat[1][1] * A_Mat[2][2] - A_Mat[2][1] * A_Mat[1][2];
-		y = A_Mat[1][0] * A_Mat[2][2] - A_Mat[2][0] * A_Mat[1][2];
-		z = A_Mat[1][0] * A_Mat[2][1] - A_Mat[2][0] * A_Mat[1][1];
-		return A_Mat[0][0] * x - A_Mat[0][1] * y + A_Mat[0][2] * z;
+		x = Mat[1][1] * Mat[2][2] - Mat[2][1] * Mat[1][2];
+		y = Mat[1][0] * Mat[2][2] - Mat[2][0] * Mat[1][2];
+		z = Mat[1][0] * Mat[2][1] - Mat[2][0] * Mat[1][1];
+		return Mat[0][0] * x - Mat[0][1] * y + Mat[0][2] * z;
 	}
 	return 0;
 }
 
-float* calVecSol(Solver *solver) {
+void* calVecSol(Solver *solver) {
 	float x, y, z;
 	float *X_Vec = malloc(solver->count * sizeof(float));
 	if (X_Vec == NULL) {
 		printf("ERROR! COULD NOT MALLOC X_Vec!");
 		return 0;
 	}
+	float **matCpy = malloc(solver->count * solver->count * sizeof(float**));
+	if (matCpy == NULL) {
+		printf("ERROR! COULD NOT MALLOC matCpy!");
+		return NULL;
+	}
 	if (solver->count == 1) {
-		*X_Vec = *solver->B_Vec / solver->Detrmin;
+		X_Vec[0] = solver->B_Vec[0] / solver->Detrmin;
 	}
 	if (solver->count == 2) {
-
+		memcpy(matCpy, solver->A_Mat,
+				solver->count * solver->count * sizeof(float));
+		matCpy[0][0] = solver->B_Vec[0];
+		matCpy[1][0] = solver->B_Vec[1];
+		x = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		memcpy(matCpy, solver->A_Mat,
+				solver->count * solver->count * sizeof(float));
+		matCpy[0][1] = solver->B_Vec[0];
+		matCpy[1][1] = solver->B_Vec[1];
+		y = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		X_Vec[0] = x;
+		X_Vec[1] = y;
 	}
 	if (solver->count == 3) {
-
+		memcpy(matCpy, solver->A_Mat,
+				solver->count * solver->count * sizeof(float));
+		matCpy[0][0] = solver->B_Vec[0];
+		matCpy[1][0] = solver->B_Vec[1];
+		matCpy[2][0] = solver->B_Vec[2];
+		x = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		memcpy(matCpy, solver->A_Mat,
+				solver->count * solver->count * sizeof(float));
+		matCpy[0][1] = solver->B_Vec[0];
+		matCpy[1][1] = solver->B_Vec[1];
+		matCpy[2][1] = solver->B_Vec[2];
+		y = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		memcpy(matCpy, solver->A_Mat,
+				solver->count * solver->count * sizeof(float));
+		matCpy[0][2] = solver->B_Vec[0];
+		matCpy[1][2] = solver->B_Vec[1];
+		matCpy[2][2] = solver->B_Vec[2];
+		z = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		X_Vec[0] = x;
+		X_Vec[1] = y;
+		X_Vec[2] = z;
 	}
+	free(matCpy);
 	return X_Vec;
 }
 
@@ -159,6 +204,7 @@ int main() {
 		printf("There is no single solution for that system of equations.\n");
 	} else {
 		solver->X_Vec = calVecSol(solver);
+		printVector(solver->X_Vec, solver->count);
 	}
 	return 0;
 }
