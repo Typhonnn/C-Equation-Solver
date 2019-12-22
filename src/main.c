@@ -7,6 +7,14 @@
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
 
+//3*x+4*y+5*z=10
+//5*x+6*y+7*z=12
+//4*x+5*y+0*z=15
+//
+//-1.2*x+95.85*y-123.456*z=123.001
+//-3.3*z+2.2*y-1.1*x=0.01
+//95.85*x+78*z-1.23*y=0
+
 void cpyMat(float **dest, float **src, int size) {
 	int i, j;
 	for (i = 0; i < size; ++i) {
@@ -43,12 +51,30 @@ void printMatrix(float **mat, int size) {
 	}
 }
 
+void setNumbers(char *eqCpy, Equation *tempEq, int size) {
+	float num[MAX_EQUATIONS];
+	int i;
+	char var[MAX_EQUATIONS];
+	if (size == 1) {
+		sscanf(eqCpy, "%f %c %f", &num[0], &var[0], &tempEq->B);
+	}
+	if (size == 2) {
+		sscanf(eqCpy, "%f %c %f %c %f", &num[0], &var[0], &num[1], &var[1],
+				&tempEq->B);
+	}
+	if (size == 3) {
+		sscanf(eqCpy, "%f %*c %c %f %c %f %c %f", &num[0], &var[0], &num[1],
+				&var[1], &num[2], &var[2], &tempEq->B);
+	}
+	for (i = 0; i < size; ++i) {
+		tempEq->A[var[i] - 'x'] = num[i];
+	}
+}
+
 void* setEquation(AllEquations *allEq, char *eqStr) {
 	char eqCpy[EQ_SIZE];
-	char *delimiters = " *+=";
-	float num;
-	int i = 0;
-	char var[MAX_EQUATIONS];
+	memset(eqCpy, '\0', EQ_SIZE);
+	char *delimiters = " +*=";
 	Equation *tempEq = malloc(sizeof(Equation));
 	if (tempEq == NULL) {
 		printf("ERROR! COULD NOT MALLOC tempEq!");
@@ -63,16 +89,9 @@ void* setEquation(AllEquations *allEq, char *eqStr) {
 	strcpy(eqCpy, eqStr);
 	char *splitEq = strtok(eqCpy, delimiters);
 	while (splitEq != NULL) {
-		sscanf(splitEq, "%f", &num);
 		splitEq = strtok(NULL, delimiters);
-		if (splitEq != NULL) {
-			sscanf(splitEq, "%c", &var[i]);
-			(tempEq->A[var[i] - 'x']) = num;
-			splitEq = strtok(NULL, delimiters);
-			i++;
-		}
 	}
-	tempEq->B = num;
+	setNumbers(eqCpy, tempEq, allEq->count);
 	return tempEq;
 }
 
@@ -135,7 +154,7 @@ float calDetrmin(float **Mat, int size) {
 
 void* calVecSol(Solver *solver) {
 	int i;
-	float x, y, z;
+	float dx, dy, dz;
 	float *X_Vec = malloc(solver->count * sizeof(float));
 	if (X_Vec == NULL) {
 		printf("ERROR! COULD NOT MALLOC X_Vec!");
@@ -156,33 +175,33 @@ void* calVecSol(Solver *solver) {
 		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][0] = solver->B_Vec[0];
 		matCpy[1][0] = solver->B_Vec[1];
-		x = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		dx = calDetrmin(matCpy, solver->count);
 		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][1] = solver->B_Vec[0];
 		matCpy[1][1] = solver->B_Vec[1];
-		y = calDetrmin(matCpy, solver->count) / solver->Detrmin;
-		X_Vec[0] = x;
-		X_Vec[1] = y;
+		dy = calDetrmin(matCpy, solver->count);
+		X_Vec[0] = dx / solver->Detrmin;
+		X_Vec[1] = dy / solver->Detrmin;
 	}
 	if (solver->count == 3) {
 		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][0] = solver->B_Vec[0];
 		matCpy[1][0] = solver->B_Vec[1];
 		matCpy[2][0] = solver->B_Vec[2];
-		x = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		dx = calDetrmin(matCpy, solver->count);
 		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][1] = solver->B_Vec[0];
 		matCpy[1][1] = solver->B_Vec[1];
 		matCpy[2][1] = solver->B_Vec[2];
-		y = calDetrmin(matCpy, solver->count) / solver->Detrmin;
+		dy = calDetrmin(matCpy, solver->count);
 		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][2] = solver->B_Vec[0];
 		matCpy[1][2] = solver->B_Vec[1];
 		matCpy[2][2] = solver->B_Vec[2];
-		z = calDetrmin(matCpy, solver->count) / solver->Detrmin;
-		X_Vec[0] = x;
-		X_Vec[1] = y;
-		X_Vec[2] = z;
+		dz = calDetrmin(matCpy, solver->count);
+		X_Vec[0] = dx / solver->Detrmin;
+		X_Vec[1] = dy / solver->Detrmin;
+		X_Vec[2] = dz / solver->Detrmin;
 	}
 	return X_Vec;
 }
@@ -196,7 +215,7 @@ int main() {
 	printf("Number of equations: ");
 	scanf("%d", &(allEq->count));
 	allEq->eqArr = malloc(allEq->count * sizeof(Equation*));
-	if ((allEq->eqArr) == NULL) {
+	if (allEq->eqArr == NULL) {
 		printf("ERROR! COULD NOT MALLOC eqArr!");
 		return 0;
 	}
