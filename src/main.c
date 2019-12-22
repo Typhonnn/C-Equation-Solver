@@ -7,6 +7,15 @@
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
 
+void cpyMat(float **dest, float **src, int size) {
+	int i, j;
+	for (i = 0; i < size; ++i) {
+		for (j = 0; j < size; ++j) {
+			dest[i][j] = src[i][j];
+		}
+	}
+}
+
 void printSolVec(float *vec, int size) {
 	int i;
 	printf("\nVector X = \n");
@@ -74,21 +83,27 @@ void setAllEquations(AllEquations *allEq) {
 		printf("Enter equation %d: ", i + 1);
 		scanf("%s", eqStr);
 		allEq->eqArr[i] = setEquation(allEq, eqStr);
-		memset(eqStr, 0, EQ_SIZE);
+		memset(eqStr, '\0', EQ_SIZE);
 	}
 }
 
 void setSolverMatrix(Solver *solver, AllEquations *allEq) {
-	int i;
+	int i, j;
 	for (i = 0; i < solver->count; ++i) {
-		solver->A_Mat[i] = allEq->eqArr[i]->A;
+		for (j = 0; j < solver->count; ++j) {
+			solver->A_Mat[i][j] = allEq->eqArr[i]->A[j];
+		}
 		solver->B_Vec[i] = allEq->eqArr[i]->B;
 	}
 }
 
 void setSolver(Solver *solver, AllEquations *allEq) {
+	int i;
 	solver->count = allEq->count;
 	solver->A_Mat = malloc(solver->count * sizeof(float*));
+	for (i = 0; i < solver->count; ++i) {
+		solver->A_Mat[i] = malloc(solver->count * sizeof(float));
+	}
 	if (solver->A_Mat == NULL) {
 		printf("ERROR! COULD NOT MALLOC solver->A_Mat!");
 		return;
@@ -119,13 +134,17 @@ float calDetrmin(float **Mat, int size) {
 }
 
 void* calVecSol(Solver *solver) {
+	int i;
 	float x, y, z;
 	float *X_Vec = malloc(solver->count * sizeof(float));
 	if (X_Vec == NULL) {
 		printf("ERROR! COULD NOT MALLOC X_Vec!");
 		return 0;
 	}
-	float **matCpy = malloc(solver->count * solver->count * sizeof(float**));
+	float **matCpy = malloc(solver->count * sizeof(float*));
+	for (i = 0; i < solver->count; ++i) {
+		matCpy[i] = malloc(solver->count * sizeof(float));
+	}
 	if (matCpy == NULL) {
 		printf("ERROR! COULD NOT MALLOC matCpy!");
 		return NULL;
@@ -134,13 +153,11 @@ void* calVecSol(Solver *solver) {
 		X_Vec[0] = solver->B_Vec[0] / solver->Detrmin;
 	}
 	if (solver->count == 2) {
-		memcpy(matCpy, solver->A_Mat,
-				solver->count * solver->count * sizeof(float));
+		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][0] = solver->B_Vec[0];
 		matCpy[1][0] = solver->B_Vec[1];
 		x = calDetrmin(matCpy, solver->count) / solver->Detrmin;
-		memcpy(matCpy, solver->A_Mat,
-				solver->count * solver->count * sizeof(float));
+		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][1] = solver->B_Vec[0];
 		matCpy[1][1] = solver->B_Vec[1];
 		y = calDetrmin(matCpy, solver->count) / solver->Detrmin;
@@ -148,20 +165,17 @@ void* calVecSol(Solver *solver) {
 		X_Vec[1] = y;
 	}
 	if (solver->count == 3) {
-		memcpy(matCpy, solver->A_Mat,
-				solver->count * solver->count * sizeof(float));
+		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][0] = solver->B_Vec[0];
 		matCpy[1][0] = solver->B_Vec[1];
 		matCpy[2][0] = solver->B_Vec[2];
 		x = calDetrmin(matCpy, solver->count) / solver->Detrmin;
-		memcpy(matCpy, solver->A_Mat,
-				solver->count * solver->count * sizeof(float));
+		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][1] = solver->B_Vec[0];
 		matCpy[1][1] = solver->B_Vec[1];
 		matCpy[2][1] = solver->B_Vec[2];
 		y = calDetrmin(matCpy, solver->count) / solver->Detrmin;
-		memcpy(matCpy, solver->A_Mat,
-				solver->count * solver->count * sizeof(float));
+		cpyMat(matCpy, solver->A_Mat, solver->count);
 		matCpy[0][2] = solver->B_Vec[0];
 		matCpy[1][2] = solver->B_Vec[1];
 		matCpy[2][2] = solver->B_Vec[2];
@@ -170,7 +184,6 @@ void* calVecSol(Solver *solver) {
 		X_Vec[1] = y;
 		X_Vec[2] = z;
 	}
-	free(matCpy);
 	return X_Vec;
 }
 
@@ -196,15 +209,13 @@ int main() {
 	setSolver(solver, allEq);
 	printMatrix(solver->A_Mat, solver->count);
 	solver->Detrmin = calDetrmin(solver->A_Mat, solver->count);
-	if (solver->Detrmin == 0) {
-		printf("Matrix A determinant = %.3f\n", solver->Detrmin);
-	}
+	printf("\nMatrix A determinant = %.3f\n", solver->Detrmin);
 	printVector(solver->B_Vec, solver->count);
 	if (solver->Detrmin == 0) {
 		printf("There is no single solution for that system of equations.\n");
 	} else {
 		solver->X_Vec = calVecSol(solver);
-		printVector(solver->X_Vec, solver->count);
+		printSolVec(solver->X_Vec, solver->count);
 	}
 	return 0;
 }
