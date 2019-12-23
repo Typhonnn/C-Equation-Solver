@@ -1,23 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "allEquations.c"
-#include "Solver.c"
+#include "allEquations.h"
+#include "Solver.h"
 
 #define EQ_SIZE 80
 #define MAX_EQUATIONS 3
-
-//3*x+4*y+5*z=10
-//5*x+6*y+7*z=12
-//4*x+5*y+0*z=15
-//
-//-1.2* x+95.85*y-123.456*z=123.001
-//-3.3*z+2.2*y-1.1*x=0.01
-//95.85*x+78*z-1.23*y=0
-//
-//1*x+y+1*z=6		5
-//5*z+2*y=-4		3
-//2*x-1*z+5*y=27	-2
 
 void cpyMat(float **dest, float **src, int size) {
 	int i, j;
@@ -26,142 +14,6 @@ void cpyMat(float **dest, float **src, int size) {
 			dest[i][j] = src[i][j];
 		}
 	}
-}
-
-void printSolVec(float *vec, int size) {
-	int i;
-	printf("\nVector X = \n");
-	for (i = 0; i < size; ++i) {
-		printf("\t%c = %.3f\n", 'x' + i, vec[i]);
-	}
-}
-
-void printVector(float *vec, int size) {
-	int i;
-	printf("\nVector B = \n");
-	for (i = 0; i < size; ++i) {
-		printf("\t%.3f\n", vec[i]);
-	}
-}
-
-void printMatrix(float **mat, int size) {
-	int i, j;
-	printf("\nMatrix A = \n");
-	for (i = 0; i < size; i++) {
-		for (j = 0; j < size; j++) {
-			printf("\t%.3f ", mat[i][j]);
-		}
-		printf("\n");
-	}
-}
-
-void setNumbers(char *eqCpy, Equation *tempEq, int size, int strLen) {
-	int i;
-	float num = 0;
-	char *delimiters = "xyz";
-	char eqCpy2[EQ_SIZE];
-	strcpy(eqCpy2, eqCpy);
-	char *splitEq = strtok(eqCpy, delimiters);
-	for (i = 0; i < strLen && splitEq != NULL; ++i) {
-		num = atof(splitEq);
-		switch (eqCpy2[i]) {
-		case 'x':
-			tempEq->A[0] = num;
-			splitEq = strtok(NULL, delimiters);
-			break;
-		case 'y':
-			tempEq->A[1] = num;
-			splitEq = strtok(NULL, delimiters);
-			break;
-		case 'z':
-			tempEq->A[2] = num;
-			splitEq = strtok(NULL, delimiters);
-			break;
-		default:
-			break;
-		}
-	}
-	tempEq->B = num;
-}
-
-void* setEquation(AllEquations *allEq, char *eqStr) {
-	int i, end = 0;
-	char eqCpy[EQ_SIZE];
-	memset(eqCpy, '\0', EQ_SIZE);
-	char *delimiters = " +*=";
-	Equation *tempEq = malloc(sizeof(Equation));
-	if (tempEq == NULL) {
-		printf("ERROR! COULD NOT MALLOC tempEq!");
-		return NULL;
-	}
-	tempEq->count = allEq->count;
-	tempEq->A = malloc(allEq->count * sizeof(float));
-	if (tempEq->A == NULL) {
-		printf("FAILED TO MALLOC tempEq->A!\n");
-		return NULL;
-	}
-	for (i = 0; i < allEq->count; ++i) {
-		tempEq->A[i] = 0;
-	}
-	char *splitEq = strtok(eqStr, delimiters);
-	while (splitEq != NULL) {
-//		if(*splitEq == '='){
-//			splitEq = strtok(NULL, delimiters);
-//			tempEq->B = atof(splitEq);
-//			break;
-//		}
-		strcat(eqCpy, splitEq);
-		splitEq = strtok(NULL, delimiters);
-		end = strlen(eqCpy);
-		if (eqCpy[end - 1] == 'x' || eqCpy[end - 1] == 'y'
-				|| eqCpy[end - 1] == 'z') {
-			if (*splitEq == 'x' || *splitEq == 'y' || *splitEq == 'z') {
-				strcat(eqCpy, "1");
-			}
-		}
-	}
-	setNumbers(eqCpy, tempEq, tempEq->count, strlen(eqCpy));
-	return tempEq;
-}
-
-void setAllEquations(AllEquations *allEq) {
-	int i = 0;
-	char eqStr[EQ_SIZE];
-	for (i = 0; i < (allEq->count); ++i) {
-		printf("Enter equation %d: ", i + 1);
-		fgets(eqStr, EQ_SIZE, stdin);
-		allEq->eqArr[i] = setEquation(allEq, eqStr);
-		memset(eqStr, '\0', EQ_SIZE);
-	}
-}
-
-void setSolverMatrix(Solver *solver, AllEquations *allEq) {
-	int i, j;
-	for (i = 0; i < solver->count; ++i) {
-		for (j = 0; j < solver->count; ++j) {
-			solver->A_Mat[i][j] = allEq->eqArr[i]->A[j];
-		}
-		solver->B_Vec[i] = allEq->eqArr[i]->B;
-	}
-}
-
-void setSolver(Solver *solver, AllEquations *allEq) {
-	int i;
-	solver->count = allEq->count;
-	solver->A_Mat = malloc(solver->count * sizeof(float*));
-	for (i = 0; i < solver->count; ++i) {
-		solver->A_Mat[i] = malloc(solver->count * sizeof(float));
-	}
-	if (solver->A_Mat == NULL) {
-		printf("ERROR! COULD NOT MALLOC solver->A_Mat!");
-		return;
-	}
-	solver->B_Vec = malloc(solver->count * sizeof(float*));
-	if (solver->B_Vec == NULL) {
-		printf("ERROR! COULD NOT MALLOC solver->B_Vec!");
-		return;
-	}
-	setSolverMatrix(solver, allEq);
 }
 
 float calDetrmin(float **Mat, int size) {
@@ -266,5 +118,8 @@ int main() {
 		solver->X_Vec = calVecSol(solver);
 		printSolVec(solver->X_Vec, solver->count);
 	}
+	printf("Press any key to continue...");
+	char standby;
+	scanf("%c", &standby);
 	return 0;
 }
