@@ -11,9 +11,13 @@
 //5*x+6*y+7*z=12
 //4*x+5*y+0*z=15
 //
-//-1.2*x+95.85*y-123.456*z=123.001
+//-1.2* x+95.85*y-123.456*z=123.001
 //-3.3*z+2.2*y-1.1*x=0.01
 //95.85*x+78*z-1.23*y=0
+//
+//1*x+y+1*z=6		5
+//5*z+2*y=-4		3
+//2*x-1*z+5*y=27	-2
 
 void cpyMat(float **dest, float **src, int size) {
 	int i, j;
@@ -51,27 +55,37 @@ void printMatrix(float **mat, int size) {
 	}
 }
 
-void setNumbers(char *eqCpy, Equation *tempEq, int size) {
-	float num[MAX_EQUATIONS];
+void setNumbers(char *eqCpy, Equation *tempEq, int size, int strLen) {
 	int i;
-	char var[MAX_EQUATIONS];
-	if (size == 1) {
-		sscanf(eqCpy, "%f %c %f", &num[0], &var[0], &tempEq->B);
+	float num = 0;
+	char *delimiters = "xyz";
+	char eqCpy2[EQ_SIZE];
+	strcpy(eqCpy2, eqCpy);
+	char *splitEq = strtok(eqCpy, delimiters);
+	for (i = 0; i < strLen && splitEq != NULL; ++i) {
+		num = atof(splitEq);
+		switch (eqCpy2[i]) {
+		case 'x':
+			tempEq->A[0] = num;
+			splitEq = strtok(NULL, delimiters);
+			break;
+		case 'y':
+			tempEq->A[1] = num;
+			splitEq = strtok(NULL, delimiters);
+			break;
+		case 'z':
+			tempEq->A[2] = num;
+			splitEq = strtok(NULL, delimiters);
+			break;
+		default:
+			break;
+		}
 	}
-	if (size == 2) {
-		sscanf(eqCpy, "%f %c %f %c %f", &num[0], &var[0], &num[1], &var[1],
-				&tempEq->B);
-	}
-	if (size == 3) {
-		sscanf(eqCpy, "%f %*c %c %f %c %f %c %f", &num[0], &var[0], &num[1],
-				&var[1], &num[2], &var[2], &tempEq->B);
-	}
-	for (i = 0; i < size; ++i) {
-		tempEq->A[var[i] - 'x'] = num[i];
-	}
+	tempEq->B = num;
 }
 
 void* setEquation(AllEquations *allEq, char *eqStr) {
+	int i, end = 0;
 	char eqCpy[EQ_SIZE];
 	memset(eqCpy, '\0', EQ_SIZE);
 	char *delimiters = " +*=";
@@ -86,12 +100,27 @@ void* setEquation(AllEquations *allEq, char *eqStr) {
 		printf("FAILED TO MALLOC tempEq->A!\n");
 		return NULL;
 	}
-	strcpy(eqCpy, eqStr);
-	char *splitEq = strtok(eqCpy, delimiters);
-	while (splitEq != NULL) {
-		splitEq = strtok(NULL, delimiters);
+	for (i = 0; i < allEq->count; ++i) {
+		tempEq->A[i] = 0;
 	}
-	setNumbers(eqCpy, tempEq, allEq->count);
+	char *splitEq = strtok(eqStr, delimiters);
+	while (splitEq != NULL) {
+//		if(*splitEq == '='){
+//			splitEq = strtok(NULL, delimiters);
+//			tempEq->B = atof(splitEq);
+//			break;
+//		}
+		strcat(eqCpy, splitEq);
+		splitEq = strtok(NULL, delimiters);
+		end = strlen(eqCpy);
+		if (eqCpy[end - 1] == 'x' || eqCpy[end - 1] == 'y'
+				|| eqCpy[end - 1] == 'z') {
+			if (*splitEq == 'x' || *splitEq == 'y' || *splitEq == 'z') {
+				strcat(eqCpy, "1");
+			}
+		}
+	}
+	setNumbers(eqCpy, tempEq, tempEq->count, strlen(eqCpy));
 	return tempEq;
 }
 
@@ -100,7 +129,7 @@ void setAllEquations(AllEquations *allEq) {
 	char eqStr[EQ_SIZE];
 	for (i = 0; i < (allEq->count); ++i) {
 		printf("Enter equation %d: ", i + 1);
-		scanf("%s", eqStr);
+		fgets(eqStr, EQ_SIZE, stdin);
 		allEq->eqArr[i] = setEquation(allEq, eqStr);
 		memset(eqStr, '\0', EQ_SIZE);
 	}
@@ -214,6 +243,7 @@ int main() {
 	}
 	printf("Number of equations: ");
 	scanf("%d", &(allEq->count));
+	getchar();
 	allEq->eqArr = malloc(allEq->count * sizeof(Equation*));
 	if (allEq->eqArr == NULL) {
 		printf("ERROR! COULD NOT MALLOC eqArr!");
